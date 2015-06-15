@@ -4,12 +4,13 @@
   "description": "A script to make a directory tree from my iPhoto library",
   "main": "export.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./export"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
     "lodash": "^3.9.3",
-    "xml2js": "^0.4.9"
+    "plist": "^1.1.0"
   }
 }
