@@ -119,13 +119,17 @@ function updateIncomingPaths( photo ) {
   }
 }
 
+var fileStats = [];
+
+var ROOT_DIR = '/Volumes/f8/iPhoto/';
+
 _.forEach(eventsDict, function( yearObj, year ) {
   // Ensure directory for this year
-  mkdirIfNotExists( [ './iPhoto', year ].join('/') );
+  mkdirIfNotExists( [ ROOT_DIR, year ].join('/') );
 
   _.forEach(yearObj, function( monthArr, month ) {
     // Ensure directory for this month
-    mkdirIfNotExists( [ './iPhoto', year, month ].join('/') );
+    mkdirIfNotExists( [ ROOT_DIR, year, month ].join('/') );
 
     // For later use
     var eventsInMonth = monthArr.length;
@@ -135,7 +139,7 @@ _.forEach(eventsDict, function( yearObj, year ) {
       var fileName = getPrefix( idx, eventsInMonth ) + cleanFileName( event.RollName );
 
       // Give photos a place to live
-      mkdirIfNotExists( [ './iPhoto', year, month, fileName ].join( '/' ) );
+      mkdirIfNotExists( [ ROOT_DIR, year, month, fileName ].join( '/' ) );
 
       // Build an array of this roll's photos
       var eventPhotos = _.map( event.KeyList, function( photoId ) {
@@ -166,6 +170,20 @@ _.forEach(eventsDict, function( yearObj, year ) {
           return 'Missing: ' + photo.ImagePath;
         }).join('\n'));
       }
+
+      // Stat files
+      eventPhotos.forEach(function( photo ) {
+        var photoStats = fs.statSync( photo.ImagePath );
+        fileStats.push({
+          id: photo.GUID,
+          path: photo.ImagePath,
+          size: photoStats.size
+        });
+      });
     });
   });
 });
+
+fs.writeFileSync('./file-stats.csv', fileStats.map(function(info) {
+  return [info.id, info.path, info.size].join();
+}).join('\n'));
