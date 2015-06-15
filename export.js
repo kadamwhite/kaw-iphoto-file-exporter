@@ -72,13 +72,25 @@ function getPrefix( index, eventsInMonth ) {
   return pad( index, lengthOfMaxEventStr ) + ' - ';
 }
 
+
+function mkdirIfNotExists( path ) {
+  if ( ! fs.existsSync( path ) ) {
+    fs.mkdirSync( path )
+  }
+}
+
+mkdirIfNotExists( './iPhoto' );
+
 _.forEach(eventsDict, function( yearObj, year ) {
+  mkdirIfNotExists( [ './iPhoto', year ].join('/') );
   _.forEach(yearObj, function( monthArr, month ) {
+    mkdirIfNotExists( [ './iPhoto', year, month ].join('/') );
     var eventsInMonth = monthArr.length;
     // console.log( month, eventsInMonth, getPrefix( ))
     monthArr.forEach(function( event, idx ) {
       var fileName = getPrefix( idx, eventsInMonth ) + cleanFileName( event.name );
-      console.log( [ year, month, fileName ].join('/') );
+      // console.log( [ year, month, fileName ].join('/') );
+      mkdirIfNotExists( [ './iPhoto', year, month, fileName ].join('/') );
     });
   });
 });
