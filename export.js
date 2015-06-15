@@ -1,8 +1,7 @@
 var fs = require( 'fs' );
-var path = require( 'path' );
-var plist = require( 'plist' );
-
 var _ = require( 'lodash' );
+
+var photoData = require( './album-data' );
 
 var APPLE_BASE_TIME = 978307200000; // 1-1-2001 (in ms)
 
@@ -33,8 +32,6 @@ function cleanFileName( str ) {
   // Replace problematic special characters
   return str.replace(/[^A-Za-z0-9()_,"'& -]/g, '-');
 }
-
-var photoData = plist.parse( fs.readFileSync( path.join( __dirname, 'AlbumData.xml' ), 'utf8' ) );
 
 /*
 EVENTS ("rolls")
@@ -144,5 +141,3 @@ _.forEach(eventsDict, function( yearObj, year ) {
     });
   });
 });
-
-module.exports = photoData;
