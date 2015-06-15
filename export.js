@@ -36,7 +36,36 @@ function cleanFileName( str ) {
 
 var photoData = plist.parse( fs.readFileSync( path.join( __dirname, 'AlbumData.xml' ), 'utf8' ) );
 
+/*
+EVENTS ("rolls")
+========================================================
+    RollID:                   1577 (integer)
+    ProjectUuid:              6D1B500A-314F-4513-ACC5-817F95F68AA3 (string)
+    RollName:                 Kington 1 (string)
+    RollDateAsTimerInterval:  236210156.000000 (real)
+    KeyPhotoKey:              1578 (string)
+    PhotoCount:               38 (integer)
+    KeyList:                  ["1615"...] (array)
+*/
 var events = photoData['List of Rolls'];
+
+/*
+PHOTOS
+========================================================
+    Caption:                    IMG_6172 (string)
+    Comment:                     (string)
+    GUID:                       1B461F08-FA70-4D35-9201-072C1516D340 (string)
+    Roll:                       1577 (integer)
+    Rating:                     0 (integer)
+    ImagePath:                  /Volumes/f8/iPhoto Library.photolibrary/Masters/2008/Kington 1/IMG_6172.JPG (string)
+    MediaType:                  Image (string)
+    ModDateAsTimerInterval:     236206556.000000 (real)
+    DateAsTimerInterval:        236210156.000000 (real)
+    DateAsTimerIntervalGMT:     236195756.000000 (real)
+    MetaModDateAsTimerInterval: 316067320.366547 (real)
+    ThumbPath:                  /Volumes/f8/iPhoto Library.photolibrary/Thumbnails/2008/Kington 1/IMG_6172.jpg (string)
+*/
+var photos = photoData['Master Image List'];
 
 // events.forEach(function( event ) {
 //   var name = event.RollName;
@@ -45,6 +74,7 @@ var events = photoData['List of Rolls'];
 //   var month = pad( getMonth( time ), 2);
 //   // console.log([year, month, name].join('/'));
 // });
+
 
 var eventsDict = events.reduce(function( memo, event ) {
   var name = event.RollName;
@@ -56,10 +86,7 @@ var eventsDict = events.reduce(function( memo, event ) {
   memo[ year ] = memo[ year ] || {};
   memo[ year ][ month ] = memo[ year ][ month ] || [];
 
-  memo[ year ][ month ].push({
-    name: name,
-    event: event
-  });
+  memo[ year ][ month ].push( event );
 
   return memo;
 }, {});
@@ -74,6 +101,7 @@ function getPrefix( index, eventsInMonth ) {
 
 
 function mkdirIfNotExists( path ) {
+  return;
   if ( ! fs.existsSync( path ) ) {
     fs.mkdirSync( path )
   }
@@ -82,15 +110,39 @@ function mkdirIfNotExists( path ) {
 mkdirIfNotExists( './iPhoto' );
 
 _.forEach(eventsDict, function( yearObj, year ) {
+  // Ensure directory for this year
   mkdirIfNotExists( [ './iPhoto', year ].join('/') );
+
   _.forEach(yearObj, function( monthArr, month ) {
+    // Ensure directory for this month
     mkdirIfNotExists( [ './iPhoto', year, month ].join('/') );
+
+    // For later use
     var eventsInMonth = monthArr.length;
-    // console.log( month, eventsInMonth, getPrefix( ))
+
     monthArr.forEach(function( event, idx ) {
-      var fileName = getPrefix( idx, eventsInMonth ) + cleanFileName( event.name );
-      // console.log( [ year, month, fileName ].join('/') );
-      mkdirIfNotExists( [ './iPhoto', year, month, fileName ].join('/') );
+      // Ensure directory for this event
+      var fileName = getPrefix( idx, eventsInMonth ) + cleanFileName( event.RollName );
+      console.log( [ year, month, fileName ].join('/') );
+
+      // Give photos a place to live
+      mkdirIfNotExists( [ './iPhoto', year, month, fileName ].join( '/' ) );
+
+      // Build an array of this roll's photos
+      var eventPhotos = _.map( event.KeyList, function( photoId ) {
+        return photos[ photoId ];
+      });
+
+      require( 'assert' )( eventPhotos.length === event.PhotoCount );
+
+      eventPhotos.forEach(function( photo ) {
+        var exists = fs.existsSync( photo.ImagePath );
+        if ( ! exists ) {
+          console.error( 'Missing: ' + photo.ImagePath );
+        }
+      });
     });
   });
 });
+
+module.exports = photoData;
