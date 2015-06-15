@@ -1,0 +1,11 @@
+{
+  "name": "iphoto-image-exporter",
+  "version": "1.0.0",
+  "description": "A script to make a directory tree from my iPhoto library",
+  "main": "export.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT"
+}
