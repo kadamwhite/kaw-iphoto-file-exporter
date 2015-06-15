@@ -106,6 +106,19 @@ function mkdirIfNotExists( path ) {
 
 mkdirIfNotExists( './iPhoto' );
 
+var incomingRegExp = /\/Volumes\/Oldtown\/Pictures\/Incoming from Laptop/i;
+var newIncomingPath = '/Volumes/f8/_Unfiled/Incoming from Laptop/';
+
+function updateIncomingPaths( photo ) {
+  if ( incomingRegExp.test( photo.ImagePath ) ) {
+    photo.ImagePath = photo.ImagePath.replace( incomingRegExp, newIncomingPath );
+    if ( photo.OriginalPath ) {
+      photo.OriginalPath = photo.OriginalPath.replace( incomingRegExp, newIncomingPath );
+    }
+    photo.ThumbPath = photo.ThumbPath.replace( incomingRegExp, newIncomingPath );
+  }
+}
+
 _.forEach(eventsDict, function( yearObj, year ) {
   // Ensure directory for this year
   mkdirIfNotExists( [ './iPhoto', year ].join('/') );
@@ -120,7 +133,6 @@ _.forEach(eventsDict, function( yearObj, year ) {
     monthArr.forEach(function( event, idx ) {
       // Ensure directory for this event
       var fileName = getPrefix( idx, eventsInMonth ) + cleanFileName( event.RollName );
-      console.log( [ year, month, fileName ].join('/') );
 
       // Give photos a place to live
       mkdirIfNotExists( [ './iPhoto', year, month, fileName ].join( '/' ) );
@@ -132,12 +144,28 @@ _.forEach(eventsDict, function( yearObj, year ) {
 
       require( 'assert' )( eventPhotos.length === event.PhotoCount );
 
-      eventPhotos.forEach(function( photo ) {
-        var exists = fs.existsSync( photo.ImagePath );
-        if ( ! exists ) {
-          console.error( 'Missing: ' + photo.ImagePath );
+      var missingPhotos = eventPhotos.filter(function( photo ) {
+        // Adjust for known path mapping issues
+        updateIncomingPaths( photo );
+
+        var fileExists = fs.existsSync( photo.ImagePath );
+        if ( ! fileExists ) {
+          fileExists = fs.existsSync( photo.OriginalPath );
+          if ( fileExists ) {
+            // console.log( 'Original found! ' + photo.OriginalPath );
+            // Re-point at original
+            photo.ImagePath = photo.OriginalPath;
+          }
         }
+        return ! fileExists;
       });
+
+      if ( missingPhotos.length ) {
+        console.log( '\n' + [ year, month, fileName ].join('/') );
+        console.log(missingPhotos.map(function( photo ) {
+          return 'Missing: ' + photo.ImagePath;
+        }).join('\n'));
+      }
     });
   });
 });
