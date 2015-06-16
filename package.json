@@ -1,14 +1,15 @@
 {
   "name": "iphoto-image-exporter",
   "version": "1.0.0",
-  "description": "A script to make a directory tree from my iPhoto library",
+  "description": "A script to copy files from your iPhoto library into a directory tree by year, month & event",
   "main": "export.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node ./export"
   },
-  "author": "",
+  "author": "K. Adam White",
   "license": "MIT",
+  "private": true,
   "dependencies": {
     "bluebird": "^2.9.30",
     "lodash": "^3.9.3",
