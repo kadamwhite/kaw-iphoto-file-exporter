@@ -105,8 +105,6 @@ function mkdirIfNotExists( path ) {
   }
 }
 
-mkdirIfNotExists( './iPhoto' );
-
 var incomingRegExp = /\/Volumes\/Oldtown\/Pictures\/Incoming from Laptop/i;
 var newIncomingPath = '/Volumes/f8/_Unfiled/Incoming from Laptop/';
 
@@ -125,6 +123,8 @@ function updateIncomingPaths( photo ) {
 var filesToCopy = [];
 
 var ROOT_DIR = '/Volumes/f8/iPhoto/';
+
+mkdirIfNotExists( ROOT_DIR );
 
 _.forEach(eventsDict, function( yearObj, year ) {
   // Ensure directory for this year
@@ -187,10 +187,13 @@ _.forEach(eventsDict, function( yearObj, year ) {
   });
 });
 
-// fs.writeFileSync('./file-stats.csv', fileStats.map(function(info) {
-//   return [info.path, info.size].join();
-// }).join('\n'));
-
+console.log([
+  'Found',
+  _.keys( photos ).length,
+  'total photos, in',
+  events.length,
+  'events\n'
+].join( ' ' ) );
 
 // WRITE FILES
 
@@ -199,7 +202,7 @@ var ncp = require('ncp').ncp;
 
 ncp.limit = 10;
 
-var bar = new ProgressBar( '  saving files [:bar] :percent :etas  ', {
+var bar = new ProgressBar( '  Saving files [:bar] :percent :etas  ', {
   total: filesToCopy.length
 });
 
@@ -215,7 +218,7 @@ function copyFile( fromPath, toPath ) {
   //   }
   //   bar.tick();
   //   if ( bar.complete ) {
-  //     console.log( '\ncomplete\n' );
+  //     console.log( '\nAll files copied!\n' );
   //   }
   // });
 }
