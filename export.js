@@ -277,21 +277,23 @@ function copyFile( fromPath, toPath ) {
         sanitizePath( toPath )
       ].join( ' ' );
 
+      // DRY RUN mode
       if ( process.env.DRY_RUN ) {
         bar.tick();
         didCopy.push( toPath );
+        return resolve();
       }
-      return resolve();
-      // var cp = childProcess.exec( command, function( err, stdout, stderr) {
-      //   if ( err !== null ) {
-      //     return reject( err );
-      //   }
-      //   bar.tick();
-      //   if ( bar.complete ) {
-      //     console.log( '\nAll files copied!\n' );
-      //   }
-      //   return resolve();
-      // });
+
+      var cp = childProcess.exec( command, function( err, stdout, stderr) {
+        if ( err !== null ) {
+          return reject( err );
+        }
+        bar.tick();
+        if ( bar.complete ) {
+          console.log( '\nAll files copied!\n' );
+        }
+        return resolve();
+      });
     });
   });
 }
@@ -316,5 +318,7 @@ process.on( 'SIGINT', function logInterrupt() {
   console.log( filesInProgress.map(function( path ) {
     return ' ' + path;
   }).join('\n') );
+  console.log( '\n' + didCopy.length + ' files copied,' );
+  console.log( didNotCopy.length + ' files already existed' );
   process.exit();
 });
