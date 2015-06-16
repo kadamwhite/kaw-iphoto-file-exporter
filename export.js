@@ -197,20 +197,30 @@ console.log([
 
 // WRITE FILES
 
-var ProgressBar = require('progress');
-var ncp = require('ncp').ncp;
-
-ncp.limit = 10;
+var ProgressBar = require( 'progress' );
+var childProcess = require( 'child_process' );
 
 var bar = new ProgressBar( '  Saving files [:bar] :percent :etas  ', {
   total: filesToCopy.length
 });
 
+function sanitizePath( path ) {
+  return path
+    .replace( /(\W)/g, '\\$1' );
+    // .replace( /(\s)/g, '\\$1' )
+    // .replace( /'/g, '\\\'' );
+}
+
 function copyFile( fromPath, toPath ) {
   return new Promise(function( resolve, reject ) {
     // For realsies
-    ncp( fromPath, toPath, function handleError( err ) {
-      if ( err ) {
+    var command = [
+      'cp',
+      sanitizePath( fromPath ),
+      sanitizePath( toPath )
+    ].join( ' ' );
+    var cp = childProcess.exec( command, function( err, stdout, stderr) {
+      if ( err !== null ) {
         return reject( err );
       }
       bar.tick();
@@ -222,9 +232,43 @@ function copyFile( fromPath, toPath ) {
   });
 }
 
+function removeIfNotFullyCopied( fromPath, toPath ) {
+  return new Promise(function( resolve, reject ) {
+    if ( ! fs.existsSync( toPath ) ) {
+      return resolve();
+    }
+    var fromFileStats = fs.statSync( fromPath );
+    var toFileStats = fs.statSync( toPath );
+
+    if ( toFileStats.size > fromFileStats.size ) {
+      console.log( 'Larger: ' + toPath );
+      console.log( '(' + toFileStats.size + ' vs original ' + fromFileStats.size + ')' );
+      return resolve();
+    }
+    if ( toFileStats.size === fromFileStats.size ) {
+      return resolve();
+    }
+    console.log( 'Smaller: ' + toPath );
+    console.log( '(' + toFileStats.size + ' vs original ' + fromFileStats.size + ')' );
+
+    var command = [
+      'rm',
+      sanitizePath( toPath )
+    ].join( ' ' );
+    childProcess.exec( command, function( err, stdout, stderr) {
+      if ( err !== null ) {
+        return reject( err );
+      }
+      console.log( 'Removed ' + toPath );
+      return resolve();
+    });
+  });
+}
+
 Promise.reduce( _.chunk( filesToCopy ), function( memo, chunk ) {
   return Promise.all( chunk.map(function( file ) {
-    return copyFile( file.fromPath, file.toPath );
+    // return copyFile( file.fromPath, file.toPath );
+    return removeIfNotFullyCopied( file.fromPath, file.toPath );
   }));
 }).then(function() {
   console.log( '\n\nSimulated copying ' + filesToCopy.length + ' files' );
