@@ -99,7 +99,6 @@ function getPrefix( index, eventsInMonth ) {
 
 
 function mkdirIfNotExists( path ) {
-  return;
   if ( ! fs.existsSync( path ) ) {
     fs.mkdirSync( path )
   }
