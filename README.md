@@ -11,9 +11,10 @@ Usage:
 5. `npm install` this repository
 6. Run `node ./make-json` to convert the AlbumData file into `album-data.json`
 7. Edit the `export.js` file and replace ROOT_DIR with the path to which you want to export your photos
-8. Run `npm start` to kick off the export!
+8. Run `DRY_RUN=true npm start` to write the directory structure and test out the script
+8. Run `npm start` to kick off the file export!
 
-To be extra-careful, I recommend copying out the `ncp` command and replacing it with debugging output while you make sure you understand what this program is doing.
+To be extra-careful, I recommend commenting out the actual file copy command and replacing it with debugging output while you make sure you understand what this program is doing.
 
 ------------------------
 
