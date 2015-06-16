@@ -208,21 +208,17 @@ var bar = new ProgressBar( '  Saving files [:bar] :percent :etas  ', {
 
 function copyFile( fromPath, toPath ) {
   return new Promise(function( resolve, reject ) {
-
-    bar.tick();
-    return resolve();
-
-    // // For realsies
-    // ncp( fromPath, toPath, function handleError( err ) {
-    //   if ( err ) {
-    //     return reject( err );
-    //   }
-    //   bar.tick();
-    //   if ( bar.complete ) {
-    //     console.log( '\nAll files copied!\n' );
-    //   }
-    //   return resolve();
-    // });
+    // For realsies
+    ncp( fromPath, toPath, function handleError( err ) {
+      if ( err ) {
+        return reject( err );
+      }
+      bar.tick();
+      if ( bar.complete ) {
+        console.log( '\nAll files copied!\n' );
+      }
+      return resolve();
+    });
   });
 }
 
