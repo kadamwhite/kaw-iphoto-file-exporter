@@ -11,6 +11,8 @@
   "license": "MIT",
   "dependencies": {
     "lodash": "^3.9.3",
-    "plist": "^1.1.0"
+    "ncp": "^2.0.0",
+    "plist": "^1.1.0",
+    "progress": "^1.1.8"
   }
 }

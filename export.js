@@ -1,4 +1,5 @@
 var fs = require( 'fs' );
+var path = require( 'path' );
 var _ = require( 'lodash' );
 
 var photoData = require( './album-data' );
@@ -119,7 +120,9 @@ function updateIncomingPaths( photo ) {
   }
 }
 
-var fileStats = [];
+// var fileStats = [];
+
+var filesToCopy = [];
 
 var ROOT_DIR = '/Volumes/f8/iPhoto/';
 
@@ -136,10 +139,11 @@ _.forEach(eventsDict, function( yearObj, year ) {
 
     monthArr.forEach(function( event, idx ) {
       // Ensure directory for this event
-      var fileName = getPrefix( idx, eventsInMonth ) + cleanFileName( event.RollName );
+      var dirName = getPrefix( idx, eventsInMonth ) + cleanFileName( event.RollName );
 
       // Give photos a place to live
-      mkdirIfNotExists( [ ROOT_DIR, year, month, fileName ].join( '/' ) );
+      var dirPath = [ ROOT_DIR, year, month, dirName ].join( '/' );
+      mkdirIfNotExists( dirPath );
 
       // Build an array of this roll's photos
       var eventPhotos = _.map( event.KeyList, function( photoId ) {
@@ -171,22 +175,53 @@ _.forEach(eventsDict, function( yearObj, year ) {
         }).join('\n'));
       }
 
-      // Stat files
-      eventPhotos.forEach(function( photo ) {
-        var photoStats = fs.statSync( photo.ImagePath );
-        fileStats.push({
-          id: photo.GUID,
-          path: photo.ImagePath
-            .replace('/Volumes/f8/','')
-            // .replace('iPhoto Library.photolibrary', '')
-            .replace(/,/g, ''),
-          size: photoStats.size
-        });
-      });
+      // Add this event's photos to the files to copy
+      filesToCopy = filesToCopy.concat( eventPhotos.map(function( photo ) {
+        return {
+          fromPath: photo.ImagePath,
+          toPath: path.join( dirPath, photo.ImagePath.split('/').pop() ),
+          photo: photo
+        };
+      }));
     });
   });
 });
 
-fs.writeFileSync('./file-stats.csv', fileStats.map(function(info) {
-  return [info.path, info.size].join();
-}).join('\n'));
+// fs.writeFileSync('./file-stats.csv', fileStats.map(function(info) {
+//   return [info.path, info.size].join();
+// }).join('\n'));
+
+
+// WRITE FILES
+
+var ProgressBar = require('progress');
+var ncp = require('ncp').ncp;
+
+ncp.limit = 10;
+
+var bar = new ProgressBar( '  saving files [:bar] :percent :etas  ', {
+  total: filesToCopy.length
+});
+
+function copyFile( fromPath, toPath ) {
+  // Simulate
+  // console.log( 'Copying from ' + fromPath + ' to ' + toPath );
+  bar.tick();
+
+  // For realsies
+  // ncp( fromPath, toPath, function handleError( err ) {
+  //   if ( err ) {
+  //     return console.error( err );
+  //   }
+  //   bar.tick();
+  //   if ( bar.complete ) {
+  //     console.log( '\ncomplete\n' );
+  //   }
+  // });
+}
+
+filesToCopy.forEach(function( fileToCopy ) {
+  copyFile( fileToCopy.fromPath, fileToCopy.toPath );
+});
+
+console.log( '\nSimulated copying ' + filesToCopy.length + ' files' );
