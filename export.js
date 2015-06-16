@@ -289,6 +289,7 @@ function copyFile( fromPath, toPath ) {
           return reject( err );
         }
         bar.tick();
+        didCopy.push( toPath );
         if ( bar.complete ) {
           console.log( '\nAll files copied!\n' );
         }
