@@ -176,7 +176,10 @@ _.forEach(eventsDict, function( yearObj, year ) {
         var photoStats = fs.statSync( photo.ImagePath );
         fileStats.push({
           id: photo.GUID,
-          path: photo.ImagePath,
+          path: photo.ImagePath
+            .replace('/Volumes/f8/','')
+            // .replace('iPhoto Library.photolibrary', '')
+            .replace(/,/g, ''),
           size: photoStats.size
         });
       });
@@ -185,5 +188,5 @@ _.forEach(eventsDict, function( yearObj, year ) {
 });
 
 fs.writeFileSync('./file-stats.csv', fileStats.map(function(info) {
-  return [info.id, info.path, info.size].join();
+  return [info.path, info.size].join();
 }).join('\n'));
