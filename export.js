@@ -227,7 +227,9 @@ function copyFile( fromPath, toPath ) {
 }
 
 Promise.reduce( _.chunk( filesToCopy ), function( memo, chunk ) {
-    return Promise.all( chunk.map( copyFile ) );
+  return Promise.all( chunk.map(function( file ) {
+    return copyFile( file.fromPath, file.toPath );
+  }));
 }).then(function() {
   console.log( '\n\nSimulated copying ' + filesToCopy.length + ' files' );
 });
