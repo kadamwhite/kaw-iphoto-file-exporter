@@ -98,10 +98,14 @@ function getPrefix( index, eventsInMonth ) {
   return pad( index, lengthOfMaxEventStr ) + ' - ';
 }
 
-
+var newDirectories = 0;
+var existingDirectories = 0;
 function mkdirIfNotExists( path ) {
   if ( ! fs.existsSync( path ) ) {
+    newDirectories++;
     fs.mkdirSync( path )
+  } else {
+    existingDirectories++;
   }
 }
 
@@ -195,6 +199,14 @@ console.log([
   'events\n'
 ].join( ' ' ) );
 
+if ( newDirectories ) {
+  console.log( newDirectories + ' created' );
+}
+if ( existingDirectories ) {
+  console.log( existingDirectories + ' directories already exist' );
+}
+console.log('\n');
+
 // WRITE FILES
 
 var ProgressBar = require( 'progress' );
@@ -211,65 +223,98 @@ function sanitizePath( path ) {
     // .replace( /'/g, '\\\'' );
 }
 
-function copyFile( fromPath, toPath ) {
+var filesInProgress = [];
+var didCopy = [];
+var didNotCopy = [];
+
+var reportMessages = [];
+function report( message ) {
+  reportMessages.push( message );
+}
+
+function okToCopy( fromPath, toPath ) {
   return new Promise(function( resolve, reject ) {
-    // For realsies
-    var command = [
-      'cp',
-      sanitizePath( fromPath ),
-      sanitizePath( toPath )
-    ].join( ' ' );
-    var cp = childProcess.exec( command, function( err, stdout, stderr) {
-      if ( err !== null ) {
-        return reject( err );
+    fs.exists( toPath, function( exists ) {
+      if ( ! exists ) {
+        // If file is not there, still need to copy
+        return resolve( true );
       }
-      bar.tick();
-      if ( bar.complete ) {
-        console.log( '\nAll files copied!\n' );
-      }
-      return resolve();
+      fs.stat( fromPath, function( err, fromFileStats ) {
+        if ( err ) {
+          return reject( err );
+        }
+        fs.stat( toPath, function( err, toFileStats ) {
+          if ( err ) {
+            return reject( err );
+          }
+          if ( toFileStats.size < fromFileStats.size ) {
+            report( 'Smaller than original: overwrote ' + toPath );
+            // If FROM file is larger than TO file, still need to copy
+            return resolve( true );
+          } else {
+            return resolve( false );
+          }
+        });
+      });
     });
   });
 }
 
-function removeIfNotFullyCopied( fromPath, toPath ) {
-  return new Promise(function( resolve, reject ) {
-    if ( ! fs.existsSync( toPath ) ) {
-      return resolve();
-    }
-    var fromFileStats = fs.statSync( fromPath );
-    var toFileStats = fs.statSync( toPath );
+function copyFile( fromPath, toPath ) {
+  return okToCopy( fromPath, toPath ).then(function( shouldCopy ) {
 
-    if ( toFileStats.size > fromFileStats.size ) {
-      console.log( 'Larger: ' + toPath );
-      console.log( '(' + toFileStats.size + ' vs original ' + fromFileStats.size + ')' );
-      return resolve();
+    if ( ! shouldCopy ) {
+      bar.tick();
+      didNotCopy.push( toPath );
+      return Promise.resolve();
     }
-    if ( toFileStats.size === fromFileStats.size ) {
-      return resolve();
-    }
-    console.log( 'Smaller: ' + toPath );
-    console.log( '(' + toFileStats.size + ' vs original ' + fromFileStats.size + ')' );
 
-    var command = [
-      'rm',
-      sanitizePath( toPath )
-    ].join( ' ' );
-    childProcess.exec( command, function( err, stdout, stderr) {
-      if ( err !== null ) {
-        return reject( err );
+    return new Promise(function( resolve, reject ) {
+      // For realsies
+      var command = [
+        'cp',
+        sanitizePath( fromPath ),
+        sanitizePath( toPath )
+      ].join( ' ' );
+
+      if ( process.env.DRY_RUN ) {
+        bar.tick();
+        didCopy.push( toPath );
       }
-      console.log( 'Removed ' + toPath );
       return resolve();
+      // var cp = childProcess.exec( command, function( err, stdout, stderr) {
+      //   if ( err !== null ) {
+      //     return reject( err );
+      //   }
+      //   bar.tick();
+      //   if ( bar.complete ) {
+      //     console.log( '\nAll files copied!\n' );
+      //   }
+      //   return resolve();
+      // });
     });
   });
 }
 
 Promise.reduce( _.chunk( filesToCopy ), function( memo, chunk ) {
+  filesInProgress = chunk.map(function( file ) {
+    return file.toPath;
+  });
   return Promise.all( chunk.map(function( file ) {
-    // return copyFile( file.fromPath, file.toPath );
-    return removeIfNotFullyCopied( file.fromPath, file.toPath );
+    return copyFile( file.fromPath, file.toPath );
   }));
-}).then(function() {
-  console.log( '\n\nSimulated copying ' + filesToCopy.length + ' files' );
+}).then(function logCompletion() {
+  console.log( '\n\n' + reportMessages.join( '\n' ) );
+  console.log( '\n' + didCopy.length + ' files copied,' );
+  console.log( didNotCopy.length + ' files already existed' );
+});
+
+// Catch Ctrl-C interrupt
+process.on( 'SIGINT', function logInterrupt() {
+  console.log( reportMessages.join( '\n' ) );
+  console.log( '\n\nThe following files were in progress:' );
+  console.log( filesInProgress.map(function( path ) {
+    return ' ' + path;
+  }).join('\n') );
+  process.exit();
 });
