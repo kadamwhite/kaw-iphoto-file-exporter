@@ -1,6 +1,7 @@
 var fs = require( 'fs' );
 var path = require( 'path' );
 var _ = require( 'lodash' );
+var Promise = require( 'bluebird' );
 
 var photoData = require( './album-data' );
 
@@ -206,24 +207,27 @@ var bar = new ProgressBar( '  Saving files [:bar] :percent :etas  ', {
 });
 
 function copyFile( fromPath, toPath ) {
-  // Simulate
-  // console.log( 'Copying from ' + fromPath + ' to ' + toPath );
-  bar.tick();
+  return new Promise(function( resolve, reject ) {
 
-  // For realsies
-  // ncp( fromPath, toPath, function handleError( err ) {
-  //   if ( err ) {
-  //     return console.error( err );
-  //   }
-  //   bar.tick();
-  //   if ( bar.complete ) {
-  //     console.log( '\nAll files copied!\n' );
-  //   }
-  // });
+    bar.tick();
+    return resolve();
+
+    // // For realsies
+    // ncp( fromPath, toPath, function handleError( err ) {
+    //   if ( err ) {
+    //     return reject( err );
+    //   }
+    //   bar.tick();
+    //   if ( bar.complete ) {
+    //     console.log( '\nAll files copied!\n' );
+    //   }
+    //   return resolve();
+    // });
+  });
 }
 
-filesToCopy.forEach(function( fileToCopy ) {
-  copyFile( fileToCopy.fromPath, fileToCopy.toPath );
+Promise.reduce( _.chunk( filesToCopy ), function( memo, chunk ) {
+    return Promise.all( chunk.map( copyFile ) );
+}).then(function() {
+  console.log( '\n\nSimulated copying ' + filesToCopy.length + ' files' );
 });
-
-console.log( '\nSimulated copying ' + filesToCopy.length + ' files' );
